@@ -133,7 +133,7 @@ class CitibikeAPI {
                 ebikeOnlyStations.append(station)
             } else {
                 let classicBikesAvailable = station.totalBikesAvailable - station.ebikesAvailable
-                if classicBikesAvailable == 1 && station.totalBikesAvailable > 1 {
+                if classicBikesAvailable == 1 {
                     oneClassicStations.append(station)
                 }
             }

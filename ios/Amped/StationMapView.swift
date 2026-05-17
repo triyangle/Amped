@@ -282,14 +282,21 @@ struct StationMapView: View {
 }
 
 struct StationAnnotation: Identifiable {
-    var id: String {
-        "\(type.rawValue)-\(station.stationId)"
+    let id: String
+    var coordinate: CLLocationCoordinate2D
+    var type: StationType
+    var station: Station
+    var isSheetOpen = false
+    var walkingTime: TimeInterval? = nil
+    
+    init(coordinate: CLLocationCoordinate2D, type: StationType, station: Station, isSheetOpen: Bool = false, walkingTime: TimeInterval? = nil) {
+        self.id = "\(type.rawValue)-\(station.stationId)"
+        self.coordinate = coordinate
+        self.type = type
+        self.station = station
+        self.isSheetOpen = isSheetOpen
+        self.walkingTime = walkingTime
     }
-var coordinate: CLLocationCoordinate2D
-var type: StationType
-var station: Station
-var isSheetOpen = false
-var walkingTime: TimeInterval? = nil
 
     enum StationType: String {
         case empty = "empty"

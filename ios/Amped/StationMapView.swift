@@ -55,7 +55,7 @@ struct StationMapView: View {
         ZStack {
             Map(coordinateRegion: $region, showsUserLocation: true, annotationItems: annotations) { stationAnnotation -> MapAnnotation in
                 MapAnnotation(coordinate: stationAnnotation.coordinate){
-                    if stationAnnotation.type != .empty || showEmptyStations {
+                    if showEmptyStations || stationAnnotation.type != .empty {
                         PinIcon(stationType: stationAnnotation.type, numEbikesAvailable: stationAnnotation.station.ebikesAvailable)
                             .onTapGesture {
                                 currentStation = stationAnnotation.station
@@ -292,9 +292,9 @@ var isSheetOpen = false
 var walkingTime: TimeInterval? = nil
 
     enum StationType: String {
-        case empty
-        case ebikeOnly
-        case oneClassicRemaining
+        case empty = "empty"
+        case ebikeOnly = "ebikeOnly"
+        case oneClassicRemaining = "oneClassicRemaining"
     }
 }
 

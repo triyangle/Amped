@@ -9,37 +9,37 @@ import Foundation
 import SwiftUI
 
 struct PinIcon: View {
-var numEbikesAvailable: Int
+    var stationType: StationAnnotation.StationType
+    var numEbikesAvailable: Int
+    
+    private var pinColor: Color {
+        switch stationType {
+        case .empty:
+            return .red
+        case .ebikeOnly:
+            return .blue
+        case .oneClassicRemaining:
+            return .orange
+        }
+    }
+    
+    private var labelText: String {
+        numEbikesAvailable == 0 ? "0" : String(numEbikesAvailable)
+    }
 
     var body: some View {
-        if(numEbikesAvailable == 0){
-            VStack(spacing: 0){
-                ZStack {
-                    Image(systemName: "circle.fill")
-                        .font(.title)
-                        .foregroundColor(.red)
-                    Text("0")
-                        .foregroundColor(.white)
-                }
-                Image(systemName: "arrowtriangle.down.fill")
-                    .font(.caption)
-                    .foregroundColor(.red)
-                    .offset(x: 0, y: -5)
+        VStack(spacing: 0) {
+            ZStack {
+                Image(systemName: "circle.fill")
+                    .font(.title)
+                    .foregroundColor(pinColor)
+                Text(labelText)
+                    .foregroundColor(.white)
             }
-        } else {
-            VStack(spacing: 0) {
-                ZStack {
-                    Image(systemName: "circle.fill")
-                        .font(.title)
-                        .foregroundColor(.blue)
-                    Text(String(numEbikesAvailable))
-                        .foregroundColor(.white)
-                }
-                Image(systemName: "arrowtriangle.down.fill")
-                    .font(.caption)
-                    .foregroundColor(.blue)
-                    .offset(x: 0, y: -5)
-            }
+            Image(systemName: "arrowtriangle.down.fill")
+                .font(.caption)
+                .foregroundColor(pinColor)
+                .offset(x: 0, y: -5)
         }
     }
 }

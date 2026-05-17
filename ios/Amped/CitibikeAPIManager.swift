@@ -113,9 +113,10 @@ class CitibikeAPI {
         task.resume()
     }
     
-    func categorizeStations(stations: [Station]) -> (emptyStations: [Station], ebikeOnlyStations: [Station]) {
+    func categorizeStations(stations: [Station]) -> (emptyStations: [Station], ebikeOnlyStations: [Station], oneClassicStations: [Station]) {
         var emptyStations = [Station]()
         var ebikeOnlyStations = [Station]()
+        var oneClassicStations = [Station]()
         
         for station in stations {
             if station.isOffline { continue }
@@ -124,9 +125,11 @@ class CitibikeAPI {
                 emptyStations.append(station)
             } else if station.totalBikesAvailable == station.ebikesAvailable {
                 ebikeOnlyStations.append(station)
+            } else if station.totalBikesAvailable - station.ebikesAvailable == 1 && station.ebikesAvailable > 0 {
+                oneClassicStations.append(station)
             }
         }
         
-        return (emptyStations, ebikeOnlyStations)
+        return (emptyStations, ebikeOnlyStations, oneClassicStations)
     }
 }

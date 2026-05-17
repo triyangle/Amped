@@ -13,6 +13,7 @@ struct StationMapView: View {
     
     @State private var ebikeOnlyCount: Int = 0
     @State private var emptyCount: Int = 0
+    @State private var oneClassicRemainingCount: Int = 0
     
     @State private var walkingTime: TimeInterval? = nil
     @State private var isDataLoadingInProgress: Bool = false
@@ -38,21 +39,24 @@ struct StationMapView: View {
         center: CLLocationCoordinate2D(latitude: 40.7831, longitude: -73.9712),
         span: MKCoordinateSpan(latitudeDelta: 0.03, longitudeDelta: 0.03)
     )
+    
+    private static let lastUpdateFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.timeStyle = .medium
+        return formatter
+    }()
 
     var lastUpdateTimeString: String {
         guard let lastUpdate = lastUpdateTime else { return "00:00" }
-        
-        let formatter = DateFormatter()
-        formatter.timeStyle = .medium
-        return formatter.string(from: lastUpdate)
+        return Self.lastUpdateFormatter.string(from: lastUpdate)
     }
     
     var body: some View {
         ZStack {
             Map(coordinateRegion: $region, showsUserLocation: true, annotationItems: annotations) { stationAnnotation -> MapAnnotation in
                 MapAnnotation(coordinate: stationAnnotation.coordinate){
-                    if(stationAnnotation.station.ebikesAvailable > 0 || (showEmptyStations && stationAnnotation.station.ebikesAvailable == 0)) {
-                        PinIcon(numEbikesAvailable: stationAnnotation.station.ebikesAvailable)
+                    if stationAnnotation.type != .empty || showEmptyStations {
+                        PinIcon(stationType: stationAnnotation.type, numEbikesAvailable: stationAnnotation.station.ebikesAvailable)
                             .onTapGesture {
                                 currentStation = stationAnnotation.station
                                 
@@ -72,6 +76,10 @@ struct StationMapView: View {
                 loadData()
                 dataRefreshTimer = setupDataRefreshTimer()
             })
+            .onDisappear {
+                dataRefreshTimer?.invalidate()
+                dataRefreshTimer = nil
+            }
             .edgesIgnoringSafeArea(.all)
             
             if isLoading {
@@ -128,6 +136,14 @@ struct StationMapView: View {
                                 .foregroundColor(.blue)
                                 .offset(y: 3)
                             Text("Ebikes Only: \(ebikeOnlyCount)")
+                                .font(.footnote)
+                                .foregroundColor(Color.black)
+                        }
+                        HStack(spacing: 8) {
+                            SmallPinIcon()
+                                .foregroundColor(.orange)
+                                .offset(y: 3)
+                            Text("1 Classic Left: \(oneClassicRemainingCount)")
                                 .font(.footnote)
                                 .foregroundColor(Color.black)
                         }
@@ -223,42 +239,30 @@ struct StationMapView: View {
     }
     
     func loadData(silently: Bool = false) {
-        let startTime = Date()
-        let minimumLoadingDisplayDuration: TimeInterval = 1.0 // Set this to your desired minimum time in seconds
-
-        // If it's not a silent load, we start by setting the loading indicator
         if !silently {
             isLoading = true
         }
-
-        DispatchQueue.global().async {
-            let api = CitibikeAPI()
-            api.fetchStations { stations in
-                let categories = api.categorizeStations(stations: stations)
-                let annotationsToAdd = categories.emptyStations.map { StationAnnotation(coordinate: $0.location.toCLLocationCoordinate2D(), type: .empty, station: $0) }
-                + categories.ebikeOnlyStations.map { StationAnnotation(coordinate: $0.location.toCLLocationCoordinate2D(), type: .ebikeOnly, station: $0) }
-
-                let elapsed = Date().timeIntervalSince(startTime)
-                if elapsed < minimumLoadingDisplayDuration {
-                    let remaining = minimumLoadingDisplayDuration - elapsed
-                    DispatchQueue.main.asyncAfter(deadline: .now() + remaining) {
-                        self.updateUIAfterLoading(annotationsToAdd: annotationsToAdd, categories: categories, silently: silently)
-                    }
-                } else {
-                    DispatchQueue.main.async {
-                        self.updateUIAfterLoading(annotationsToAdd: annotationsToAdd, categories: categories, silently: silently)
-                    }
-                }
+        
+        let api = CitibikeAPI()
+        api.fetchStations { stations in
+            let categories = api.categorizeStations(stations: stations)
+            let annotationsToAdd = categories.emptyStations.map { StationAnnotation(coordinate: $0.location.toCLLocationCoordinate2D(), type: .empty, station: $0) }
+            + categories.oneClassicStations.map { StationAnnotation(coordinate: $0.location.toCLLocationCoordinate2D(), type: .oneClassicRemaining, station: $0) }
+            + categories.ebikeOnlyStations.map { StationAnnotation(coordinate: $0.location.toCLLocationCoordinate2D(), type: .ebikeOnly, station: $0) }
+            
+            DispatchQueue.main.async {
+                self.updateUIAfterLoading(annotationsToAdd: annotationsToAdd, categories: categories, silently: silently)
             }
         }
     }
     
-    private func updateUIAfterLoading(annotationsToAdd: [StationAnnotation], categories: (emptyStations: [Station], ebikeOnlyStations: [Station]), silently: Bool) {
+    private func updateUIAfterLoading(annotationsToAdd: [StationAnnotation], categories: (emptyStations: [Station], ebikeOnlyStations: [Station], oneClassicStations: [Station]), silently: Bool) {
         if !silently {
             isLoading = false
         }
         annotations = annotationsToAdd
         ebikeOnlyCount = categories.ebikeOnlyStations.count
+        oneClassicRemainingCount = categories.oneClassicStations.count
         emptyCount = categories.emptyStations.count
         self.lastUpdateTime = Date()
     }
@@ -278,16 +282,19 @@ struct StationMapView: View {
 }
 
 struct StationAnnotation: Identifiable {
-var id = UUID()
+    var id: String {
+        "\(type.rawValue)-\(station.stationId)"
+    }
 var coordinate: CLLocationCoordinate2D
 var type: StationType
 var station: Station
 var isSheetOpen = false
 var walkingTime: TimeInterval? = nil
 
-    enum StationType {
+    enum StationType: String {
         case empty
         case ebikeOnly
+        case oneClassicRemaining
     }
 }
 

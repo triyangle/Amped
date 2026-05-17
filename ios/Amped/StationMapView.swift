@@ -256,7 +256,7 @@ struct StationMapView: View {
         }
     }
     
-    private func updateUIAfterLoading(annotationsToAdd: [StationAnnotation], categories: (emptyStations: [Station], ebikeOnlyStations: [Station], oneClassicStations: [Station]), silently: Bool) {
+    private func updateUIAfterLoading(annotationsToAdd: [StationAnnotation], categories: CitibikeAPI.StationCategories, silently: Bool) {
         if !silently {
             isLoading = false
         }

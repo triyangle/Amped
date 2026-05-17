@@ -113,7 +113,13 @@ class CitibikeAPI {
         task.resume()
     }
     
-    func categorizeStations(stations: [Station]) -> (emptyStations: [Station], ebikeOnlyStations: [Station], oneClassicStations: [Station]) {
+    struct StationCategories {
+        let emptyStations: [Station]
+        let ebikeOnlyStations: [Station]
+        let oneClassicStations: [Station]
+    }
+    
+    func categorizeStations(stations: [Station]) -> StationCategories {
         var emptyStations = [Station]()
         var ebikeOnlyStations = [Station]()
         var oneClassicStations = [Station]()
@@ -127,12 +133,16 @@ class CitibikeAPI {
                 ebikeOnlyStations.append(station)
             } else {
                 let classicBikesAvailable = station.totalBikesAvailable - station.ebikesAvailable
-                if classicBikesAvailable == 1 && station.ebikesAvailable > 0 {
+                if classicBikesAvailable == 1 && station.totalBikesAvailable > 1 {
                     oneClassicStations.append(station)
                 }
             }
         }
         
-        return (emptyStations, ebikeOnlyStations, oneClassicStations)
+        return StationCategories(
+            emptyStations: emptyStations,
+            ebikeOnlyStations: ebikeOnlyStations,
+            oneClassicStations: oneClassicStations
+        )
     }
 }
